@@ -14,12 +14,6 @@ services:
     volumes:
       # Optional: Mount logs directory for persistence
       - ./logs:/app/logs
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/api/health"]
