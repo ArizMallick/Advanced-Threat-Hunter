@@ -1,6 +1,5 @@
-# Advanced Threat Hunter - Production Docker Image
-# Base image with Python 3.11
-FROM python:3.11-slim
+# Advanced Threat Hunter - Production Docker Image (ARM Compatible)
+FROM python:3.11-alpine
 
 # Metadata labels for Docker Hub
 LABEL maintainer="arizhasanr30@gmail.com"
@@ -24,13 +23,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FLASK_ENV=production \
     PORT=4000
 
-# Install system dependencies required by psutil
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    gcc \
-    python3-dev \
-    procps \
-    && rm -rf /var/lib/apt/lists/*
+# Install dependencies (minimal Alpine packages)
+RUN apk add --no-cache gcc musl-dev python3-dev libffi-dev curl
 
 # Copy requirements file
 COPY requirements.txt .
@@ -43,19 +37,19 @@ RUN python -m pip install --upgrade pip && \
 COPY app.py .
 COPY static/ ./static/
 
-# Create non-root user for security
-RUN useradd -m -u 1000 appuser && \
+# Create non-root user
+RUN adduser -D -u 1000 appuser && \
     chown -R appuser:appuser /app
 
 # Switch to non-root user
 USER appuser
 
-# Expose application port
+# Expose port
 EXPOSE 4000
 
-# Health check
+# Health check (uses curl instead of requests to avoid extra deps)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:4000/api/health')" || exit 1
+    CMD curl -f http://localhost:4000/api/health || exit 1
 
 # Run the application
 CMD ["python", "app.py"]
